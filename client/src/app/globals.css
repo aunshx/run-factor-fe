@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+#__next {
+  height: 100%;
+  width: 100%;
+}
+
+/* Fix Leaflet container */
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  background: #f8fafc;
+}
+
+/* Fix Leaflet controls */
+.leaflet-control-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+/* Ensure map tiles load properly */
+.leaflet-tile-container {
+  pointer-events: auto;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  will-change: transform;
+}
