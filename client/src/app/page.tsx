@@ -1,16 +1,27 @@
 "use client";
 
+import { SearchInput } from "@/components/search-input";
 import { CalculateResponse, checkHealth } from "@/lib/api";
+import {
+  Clock,
+  Database,
+  MapPin,
+  Navigation,
+  RotateCcw,
+  Trash2,
+  Zap
+} from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const Map = dynamic(() => import("../components/map"), {
   ssr: false,
   loading: () => (
-    <div className='w-full h-full bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center'>
+    <div className='w-full h-full bg-white/5 backdrop-blur-xl flex items-center justify-center rounded-3xl border border-white/10'>
       <div className='text-center'>
-        <div className='w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3'></div>
-        <p className='text-gray-600'>Loading California map...</p>
+        <div className='w-12 h-12 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4'></div>
+        <p className='text-white/80 font-medium'>Loading California map...</p>
       </div>
     </div>
   ),
@@ -31,11 +42,39 @@ function formatLocationName(lat: number, lng: number): string {
   return `${coords} (Southern CA)`;
 }
 
-function getEfficiencyColor(factor: number): string {
-  if (factor < 1.2) return "text-green-600 bg-green-50 border-green-200";
-  if (factor < 1.5) return "text-yellow-600 bg-yellow-50 border-yellow-200";
-  if (factor < 2.0) return "text-orange-600 bg-orange-50 border-orange-200";
-  return "text-red-600 bg-red-50 border-red-200";
+function getEfficiencyColor(factor: number): {
+  bg: string;
+  text: string;
+  border: string;
+  dot: string;
+} {
+  if (factor < 1.2)
+    return {
+      bg: "bg-gradient-to-br from-emerald-50/10 to-green-100/5",
+      text: "text-emerald-300",
+      border: "border-emerald-200/20",
+      dot: "bg-emerald-400",
+    };
+  if (factor < 1.5)
+    return {
+      bg: "bg-gradient-to-br from-amber-50/10 to-yellow-100/5",
+      text: "text-amber-300",
+      border: "border-amber-200/20",
+      dot: "bg-amber-400",
+    };
+  if (factor < 2.0)
+    return {
+      bg: "bg-gradient-to-br from-orange-50/10 to-orange-100/5",
+      text: "text-orange-300",
+      border: "border-orange-200/20",
+      dot: "bg-orange-400",
+    };
+  return {
+    bg: "bg-gradient-to-br from-red-50/10 to-red-100/5",
+    text: "text-red-300",
+    border: "border-red-200/20",
+    dot: "bg-red-400",
+  };
 }
 
 function getEfficiencyLabel(factor: number): string {
@@ -53,8 +92,14 @@ export default function Home() {
   );
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
 
+  // Check backend health
   useEffect(() => {
     checkHealth().then(setBackendHealthy);
+    const interval = setInterval(
+      () => checkHealth().then(setBackendHealthy),
+      30000
+    );
+    return () => clearInterval(interval);
   }, []);
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -88,214 +133,224 @@ export default function Home() {
     }
   };
 
+  const efficiencyColors = calculation
+    ? getEfficiencyColor(calculation.circuity_factor)
+    : null;
+
   return (
-    <div className='h-screen w-screen flex overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100'>
-      <div className='w-96 bg-white/80 backdrop-blur-md shadow-2xl flex flex-col border-r border-white/20'>
-        <div className='p-6 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 text-white'>
-          <div className='flex items-center gap-3'>
-            <div className='w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl'>
-              🌉
-            </div>
-            <div>
-              <h1 className='text-2xl font-bold'>California Routes</h1>
-              <p className='text-blue-100 text-sm'>
-                Transportation Efficiency Calculator
-              </p>
-            </div>
+    <div className='min-h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-8'>
+      <div className='max-w-[1800px] mx-auto h-[calc(100vh-4rem)]'>
+        <div className='flex items-center justify-between mb-8'>
+          <div>
+            <h1 className='text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-emerald-200 bg-clip-text text-transparent mb-2'>
+              California Routes
+            </h1>
+            <p className='text-white/70 text-lg font-medium'>
+              Transportation Efficiency Calculator
+            </p>
           </div>
-          <div className='mt-4 flex items-center gap-2'>
-            <div
-              className={`w-2 h-2 rounded-full ${
-                backendHealthy ? "bg-green-400" : "bg-red-400"
-              }`}
-            ></div>
-            <span className='text-sm text-blue-100'>
-              Backend:{" "}
-              {backendHealthy === null
-                ? "Checking..."
-                : backendHealthy
-                ? "Connected"
-                : "Disconnected"}
-            </span>
-          </div>
-        </div>
-
-        <div className='flex-1 p-6 space-y-6 overflow-y-auto'>
-          <div className='space-y-3'>
-            <div className='flex items-center gap-3'>
-              <div className='w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold'>
-                A
-              </div>
-              <label className='font-semibold text-gray-700'>
-                Origin Point
-              </label>
-            </div>
-            {origin ? (
-              <div className='p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl'>
-                <p className='font-semibold text-green-800'>{origin.name}</p>
-                <p className='text-sm text-green-600 mt-2 font-mono'>
-                  {origin.lat.toFixed(6)}, {origin.lng.toFixed(6)}
-                </p>
-                <button
-                  onClick={() => {
-                    setOrigin(null);
-                    setCalculation(null);
-                  }}
-                  className='text-sm text-red-600 hover:text-red-800 mt-3 font-medium'
-                >
-                  ✕ Remove
-                </button>
-              </div>
-            ) : (
-              <div className='p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center'>
-                <p className='text-gray-500 text-sm'>
-                  Click anywhere in California to set origin
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className='space-y-3'>
-            <div className='flex items-center gap-3'>
-              <div className='w-6 h-6 bg-gradient-to-r from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold'>
-                B
-              </div>
-              <label className='font-semibold text-gray-700'>
-                Destination Point
-              </label>
-            </div>
-            {destination ? (
-              <div className='p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl'>
-                <p className='font-semibold text-red-800'>{destination.name}</p>
-                <p className='text-sm text-red-600 mt-2 font-mono'>
-                  {destination.lat.toFixed(6)}, {destination.lng.toFixed(6)}
-                </p>
-                <button
-                  onClick={() => {
-                    setDestination(null);
-                    setCalculation(null);
-                  }}
-                  className='text-sm text-red-600 hover:text-red-800 mt-3 font-medium'
-                >
-                  ✕ Remove
-                </button>
-              </div>
-            ) : (
-              <div className='p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center'>
-                <p className='text-gray-500 text-sm'>
-                  {origin
-                    ? "Click in California to set destination"
-                    : "Set origin point first"}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {calculation && (
-            <div className='space-y-4'>
-              <h3 className='font-semibold text-gray-700 flex items-center gap-2'>
-                <span className='text-xl'>📊</span>
-                Route Analysis
-              </h3>
-
-              <div className='grid grid-cols-2 gap-3'>
-                <div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-                  <p className='text-xs text-blue-600 font-medium'>
-                    Straight Distance
-                  </p>
-                  <p className='text-lg font-bold text-blue-800'>
-                    {calculation.straight_distance.toFixed(1)} mi
-                  </p>
-                </div>
-                <div className='p-3 bg-purple-50 border border-purple-200 rounded-lg'>
-                  <p className='text-xs text-purple-600 font-medium'>
-                    Road Distance
-                  </p>
-                  <p className='text-lg font-bold text-purple-800'>
-                    {calculation.road_distance.toFixed(1)} mi
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`p-4 border rounded-xl ${getEfficiencyColor(
-                  calculation.circuity_factor
-                )}`}
-              >
-                <div className='flex items-center justify-between mb-2'>
-                  <span className='font-semibold'>Circuity Factor</span>
-                  <span className='px-2 py-1 bg-white/60 rounded-full text-xs font-bold'>
-                    {getEfficiencyLabel(calculation.circuity_factor)}
-                  </span>
-                </div>
-                <div className='flex items-end gap-3'>
-                  <span className='text-2xl font-bold'>
-                    {calculation.circuity_factor.toFixed(3)}
-                  </span>
-                  <span className='text-sm mb-1'>
-                    {calculation.efficiency_percent.toFixed(1)}% efficient
-                  </span>
-                </div>
-              </div>
-
-              <div className='flex items-center justify-between text-xs text-gray-500 bg-gray-50 p-3 rounded-lg'>
-                <span>⚡ {calculation.calculation_time_ms}ms</span>
-                {calculation.cached && <span>💾 Cached</span>}
-              </div>
-            </div>
-          )}
-          <div className='space-y-3'>
-            {origin && destination && (
-              <button
-                onClick={swapPoints}
-                className='w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105'
-              >
-                🔄 Swap Points
-              </button>
-            )}
-
-            <button
-              onClick={clearAll}
-              disabled={!origin && !destination}
-              className='w-full bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none'
+          <div className='flex items-center justify-between gap-4'>
+            <Link
+              href={"/database"}
+              className='flex items-center gap-3 bg-white/10 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/20 shadow-xl cursor-pointer hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98]'
             >
-              🗑️ Clear All
-            </button>
+              <Database
+                strokeWidth={1.5}
+                aria-label='database icon'
+                className='w-4 h-4 text-white'
+              />
+              <span className='text-sm font-semibold text-white'>Database</span>
+            </Link>
+            <div className='flex items-center gap-3 bg-white/10 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/20 shadow-xl'>
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  backendHealthy ? "bg-emerald-400" : "bg-red-400"
+                } shadow-lg`}
+              ></div>
+              <span className='text-sm font-semibold text-white'>
+                Backend{" "}
+                {backendHealthy === null
+                  ? "Checking..."
+                  : backendHealthy
+                  ? "Connected"
+                  : "Disconnected"}
+              </span>
+            </div>
           </div>
+        </div>
 
-          {origin && destination && (
-            <div className='border-t pt-6 space-y-3'>
-              <h3 className='font-semibold text-gray-700'>📏 Line Types</h3>
-              <div className='space-y-2'>
-                <div className='flex items-center gap-3'>
-                  <div
-                    className='w-6 h-0.5 bg-red-500 opacity-80'
-                    style={{
-                      backgroundImage:
-                        "repeating-linear-gradient(to right, #ef4444, #ef4444 4px, transparent 4px, transparent 8px)",
+        <div className='grid grid-cols-12 gap-8 h-[calc(100%-8rem)]'>
+          <div className='col-span-4 space-y-6 overflow-y-auto pr-2 relative z-10'>
+            <div className='bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl relative z-10'>
+              <div className='flex items-center gap-4 mb-8'>
+                <div className='w-1.5 h-8 bg-gradient-to-b from-emerald-400 to-blue-500 rounded-full'></div>
+                <h2 className='text-2xl font-bold text-white'>
+                  Location Selection
+                </h2>
+              </div>
+
+              <div className='space-y-6'>
+                <div className=''>
+                  <label className='block text-sm font-semibold text-white/90 mb-4 flex items-center gap-3'>
+                    <div className='w-8 h-8 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg'>
+                      A
+                    </div>
+                    <span className='text-base'>Origin Point</span>
+                  </label>
+                  <SearchInput
+                    placeholder='Search California locations...'
+                    value={origin}
+                    onSelect={setOrigin}
+                    onClear={() => {
+                      setOrigin(null);
+                      setCalculation(null);
                     }}
-                  ></div>
-                  <span className='text-sm text-gray-600'>
-                    Straight line (crow flies)
-                  </span>
+                    icon={<MapPin className='w-5 h-5' />}
+                  />
                 </div>
-                <div className='flex items-center gap-3'>
-                  <div className='w-6 h-0.5 bg-blue-500'></div>
-                  <span className='text-sm text-gray-600'>OSRM road route</span>
+                <div className=''>
+                  <label className='block text-sm font-semibold text-white/90 mb-4 flex items-center gap-3'>
+                    <div className='w-8 h-8 bg-gradient-to-r from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg'>
+                      B
+                    </div>
+                    <span className='text-base'>Destination Point</span>
+                  </label>
+                  <SearchInput
+                    placeholder='Search California locations...'
+                    value={destination}
+                    onSelect={setDestination}
+                    onClear={() => {
+                      setDestination(null);
+                      setCalculation(null);
+                    }}
+                    icon={<Navigation className='w-5 h-5' />}
+                  />
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+            {calculation && (
+              <div className='bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl relative z-10'>
+                <div className='flex items-center gap-4 mb-8'>
+                  <div className='w-1.5 h-8 bg-gradient-to-b from-purple-400 to-pink-500 rounded-full'></div>
+                  <h2 className='text-2xl font-bold text-white'>
+                    Route Analysis
+                  </h2>
+                </div>
+                <div className='grid grid-cols-2 gap-6 mb-8'>
+                  <div className='bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-400/30'>
+                    <div className='text-3xl font-bold text-blue-300 mb-2'>
+                      {calculation.straight_distance.toFixed(1)}
+                    </div>
+                    <div className='text-sm font-semibold text-blue-400 mb-1'>
+                      miles
+                    </div>
+                    <div className='text-xs text-white/60 font-medium'>
+                      Straight Distance
+                    </div>
+                  </div>
 
-      <div className='flex-1 h-full'>
-        <Map
-          origin={origin}
-          destination={destination}
-          onMapClick={handleMapClick}
-          onCalculationResult={setCalculation}
-        />
+                  <div className='bg-gradient-to-br from-purple-500/20 to-indigo-500/20 backdrop-blur-sm rounded-2xl p-6 border border-purple-400/30'>
+                    <div className='text-3xl font-bold text-purple-300 mb-2'>
+                      {calculation.road_distance.toFixed(1)}
+                    </div>
+                    <div className='text-sm font-semibold text-purple-400 mb-1'>
+                      miles
+                    </div>
+                    <div className='text-xs text-white/60 font-medium'>
+                      Road Distance
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`${efficiencyColors?.bg} backdrop-blur-sm rounded-2xl p-8 border ${efficiencyColors?.border} shadow-xl mb-6`}
+                >
+                  <div className='flex items-center justify-between mb-6'>
+                    <div className='flex items-center gap-4'>
+                      <div
+                        className={`w-4 h-4 ${efficiencyColors?.dot} rounded-full shadow-lg`}
+                      ></div>
+                      <span className='text-lg font-bold text-white'>
+                        Circuity Factor
+                      </span>
+                    </div>
+                    <div className='bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl'>
+                      <span
+                        className={`text-sm font-bold ${efficiencyColors?.text}`}
+                      >
+                        {getEfficiencyLabel(calculation.circuity_factor)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className='flex items-end gap-6'>
+                    <div
+                      className={`text-5xl font-bold ${efficiencyColors?.text}`}
+                    >
+                      {calculation.circuity_factor.toFixed(3)}
+                    </div>
+                    <div
+                      className={`text-xl font-semibold ${efficiencyColors?.text} mb-2`}
+                    >
+                      {calculation.efficiency_percent.toFixed(1)}% efficient
+                    </div>
+                  </div>
+                </div>
+                <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10'>
+                  <div className='flex items-center justify-between text-sm'>
+                    <div className='flex items-center gap-3 text-white/80'>
+                      <Zap className='w-5 h-5' />
+                      <span className='font-semibold text-base'>
+                        {calculation.calculation_time_ms}ms
+                      </span>
+                    </div>
+                    {calculation.cached && (
+                      <div className='flex items-center gap-3 text-white/80'>
+                        <Clock className='w-5 h-5' />
+                        <span className='font-semibold text-base'>Cached</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className='bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl relative z-0'>
+              <div className='space-y-4'>
+                {origin && destination && (
+                  <button
+                    onClick={swapPoints}
+                    className='w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] backdrop-blur-sm cursor-pointer'
+                  >
+                    <div className='flex items-center justify-center gap-3'>
+                      <RotateCcw className='w-5 h-5' />
+                      <span className='text-lg'>Swap Points</span>
+                    </div>
+                  </button>
+                )}
+
+                <button
+                  onClick={clearAll}
+                  disabled={!origin && !destination}
+                  className='w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 disabled:from-slate-600/50 disabled:to-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none backdrop-blur-sm cursor-pointer'
+                >
+                  <div className='flex items-center justify-center gap-3'>
+                    <Trash2 className='w-5 h-5' />
+                    <span className='text-lg'>Clear All</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className='col-span-8'>
+            <div className='h-full bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-2xl overflow-hidden'>
+              <Map
+                origin={origin}
+                destination={destination}
+                onMapClick={handleMapClick}
+                onCalculationResult={setCalculation}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

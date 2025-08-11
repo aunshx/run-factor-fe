@@ -1,4 +1,3 @@
-// lib/api.ts - Backend Integration
 export interface CalculateRequest {
   origin: {
     lat: number;
@@ -32,6 +31,40 @@ export interface CalculateResponse {
   calculation_time_ms: number;
   cached: boolean;
   route_geometry?: number[][]; // OSRM route coordinates
+}
+
+export interface HistoryResponse {
+  id: number;
+  calculation_time_ms: number;
+  circuity_factor: number;
+  created_at: string; // ISO timestamp
+  origin_lat: number;
+  origin_lng: number;
+  origin_name: string;
+  destination_lat: number;
+  destination_lng: number;
+  destination_name: string;
+  road_distance: number;
+  straight_distance: number;
+  units: string; // e.g., "miles"
+}
+
+export interface PaginatedHistoryResponse {
+  length: number;
+  items: HistoryResponse[];
+  total_count: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+export interface HistoryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sort_by?: "newest" | "oldest" | "circuity_asc" | "circuity_desc";
 }
 
 const API_BASE =
@@ -70,9 +103,39 @@ export async function calculateCircuity(
   }
 }
 
-export async function getHistory(): Promise<CalculateResponse[]> {
+export async function getHistoryPaginated(
+  params: HistoryParams = {}
+): Promise<PaginatedHistoryResponse> {
   try {
-    const response = await fetch(`${API_BASE}/history`);
+    const searchParams = new URLSearchParams();
+
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sort_by) searchParams.append("sort_by", params.sort_by);
+
+    const url = `${API_BASE}/history${
+      searchParams.toString() ? `?${searchParams.toString()}` : ""
+    }`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new ApiError(
+        `HTTP ${response.status}: ${response.statusText}`,
+        response.status
+      );
+    }
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("Failed to fetch paginated history", 0);
+  }
+}
+
+// Legacy function for backward compatibility
+export async function getHistory(): Promise<HistoryResponse[]> {
+  try {
+    const response = await fetch(`${API_BASE}/history_simple`);
     if (!response.ok) {
       throw new ApiError(
         `HTTP ${response.status}: ${response.statusText}`,
