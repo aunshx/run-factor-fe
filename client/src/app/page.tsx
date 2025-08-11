@@ -143,7 +143,7 @@ export default function Home() {
         <div className='flex items-center justify-between mb-8'>
           <div>
             <h1 className='text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-emerald-200 bg-clip-text text-transparent mb-2'>
-              California Routes
+              California Circuity Factor
             </h1>
             <p className='text-white/70 text-lg font-medium'>
               Transportation Efficiency Calculator

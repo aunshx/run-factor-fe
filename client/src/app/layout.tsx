@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "California Routes - Transportation Efficiency Calculator",
+  title: "Circuity Factor - Transportation Efficiency Calculator",
   description:
     "Calculate transportation efficiency and circuity factors for routes across California",
 };
