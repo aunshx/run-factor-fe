@@ -1,0 +1,50 @@
+# Node.js dependencies
+
+node\_modules/
+npm-debug.log\*
+yarn-debug.log\*
+yarn-error.log\*
+pnpm-debug.log\*
+\*.pid
+\*.seed
+\*.log
+
+# Output of Next.js build
+
+.next/
+out/
+
+# Production build
+
+build/
+
+# Local environment files
+
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Misc
+
+.DS\_Store
+\*.swp
+\*.swo
+
+# Vercel
+
+.vercel/
+
+# Coverage (for testing)
+
+coverage/
+
+# Typescript
+
+\*.tsbuildinfo
+
+# IDE settings
+
+.vscode/
+.idea/
+\*.iml
