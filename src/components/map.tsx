@@ -8,10 +8,35 @@ import {
   Polyline,
   useMapEvents,
   GeoJSON,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
+import * as EL from "esri-leaflet";
 import { calculateCircuity, CalculateResponse } from "@/lib/api";
 import californiaBoundary from "@/data/california.json";
+
+function EsriFeatureLayer() {
+  const map = useMap();
+
+  useEffect(() => {
+    const featureLayer = EL.featureLayer({
+      url: "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_County_Boundaries/FeatureServer/0",
+      style: () => ({
+      color: "gray",        // border color
+      weight: 2,           // border thickness
+      fillColor: "none",  // interior fill
+      fillOpacity: 0.4
+    })
+    }).addTo(map);
+
+    return () => {
+      map.removeLayer(featureLayer);
+    };
+  }, [map]);
+
+  return null;
+}
+
 
 if (typeof window !== "undefined") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -316,6 +341,7 @@ export default function Map({
             }}
           />
         )}
+        <EsriFeatureLayer/>
       </MapContainer>
 
       {isCalculating && (
